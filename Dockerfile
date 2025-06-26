@@ -1,7 +1,8 @@
 FROM node:18-slim
 
-# Install required Chromium dependencies
+# Install Chromium and required libs
 RUN apt-get update && apt-get install -y \
+  chromium \
   libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 \
   libasound2 libatk-bridge2.0-0 libcups2 libdbus-1-3 \
   libgdk-pixbuf2.0-0 libnspr4 libnss3 libxss1 xdg-utils \
@@ -14,5 +15,4 @@ COPY . .
 
 RUN npm install
 
-# WhatsApp will generate QR only if not linked, otherwise will skip
 CMD ["npm", "start"]
