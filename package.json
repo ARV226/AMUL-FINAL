@@ -1,14 +1,13 @@
 {
-  "name": "amul-stock-alert",
+  "name": "amul-stock-whatsapp-bot",
   "version": "1.0.0",
   "main": "app.js",
-  "type": "commonjs",
   "scripts": {
     "start": "unzip -o profile-data.zip && node app.js"
   },
   "dependencies": {
     "puppeteer": "^21.11.0",
-    "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.23.0"
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode-terminal": "^0.12.0"
   }
 }
