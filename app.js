@@ -1,13 +1,9 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+const fs = require('fs');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
-const RECIPIENTS = [
-  '918377884512@c.us',
-  '919711720145@c.us',
-  '918287154627@c.us'
-];
-
+// === Product List ===
 const products = [
   {
     name: "Whey Protein Gift Pack (10)",
@@ -35,34 +31,41 @@ const products = [
   }
 ];
 
-const FIRST_RUN = false; // Only use true for first-time pincode setup
+// === WhatsApp Numbers ===
+const RECIPIENTS = [
+  '918377884512@c.us',
+  '919711720145@c.us',
+  '918287154627@c.us'
+];
 
-function sleep(ms) {
-  return new Promise(res => setTimeout(res, ms));
-}
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
-async function checkStock() {
-  const inStock = [];
+(async () => {
+  console.log(`\n===== Stock Check at ${new Date().toLocaleString()} =====\n`);
 
   const browser = await puppeteer.launch({
     headless: true,
+    executablePath: '/usr/bin/chromium',
     userDataDir: './profile-data',
     args: ['--no-sandbox']
   });
 
   const page = await browser.newPage();
 
+  const available = [];
+
   for (const product of products) {
     try {
       console.log(`🔍 Checking: ${product.url}`);
       await page.goto(product.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await sleep(2000);
+
+      await delay(2000);
 
       const html = await page.content();
 
       if (html.includes('itemprop="availability" href="https://schema.org/InStock"')) {
         console.log(`✅ ${product.name} is IN STOCK!\n`);
-        inStock.push(product);
+        available.push(`✅ ${product.name}\n${product.url}`);
       } else if (html.includes('itemprop="availability" href="https://schema.org/OutOfStock"')) {
         console.log(`❌ ${product.name} is SOLD OUT.\n`);
       } else {
@@ -74,51 +77,35 @@ async function checkStock() {
     }
   }
 
-  if (FIRST_RUN) {
-    console.log("⏳ First run: Keeping browser open for 3 mins for pincode setup...");
-    await sleep(3 * 60 * 1000);
-  }
-
   await browser.close();
-  return inStock;
-}
 
-async function sendWhatsApp(products) {
-  if (products.length === 0) {
-    console.log("❎ No in-stock items. WhatsApp not triggered.\n");
-    return;
+  if (available.length > 0) {
+    const client = new Client({
+      authStrategy: new LocalAuth({ dataPath: './whatsapp-auth' })
+    });
+
+    client.on('qr', qr => {
+      console.log('📲 Scan this QR code to login to WhatsApp:');
+      qrcode.generate(qr, { small: true });
+    });
+
+    client.on('ready', async () => {
+      console.log('✅ WhatsApp is ready. Sending messages...');
+
+      const message = `🟢 *IN STOCK PRODUCTS:*\n\n${available.join('\n\n')}`;
+
+      for (const number of RECIPIENTS) {
+        await client.sendMessage(number, message);
+        console.log(`📤 Sent to ${number}`);
+      }
+
+      console.log('✅ Done. Exiting in 5s...');
+      setTimeout(() => process.exit(0), 5000);
+    });
+
+    client.initialize();
+  } else {
+    console.log("❌ No products in stock. WhatsApp message not sent.\n");
   }
 
-  const client = new Client({
-    authStrategy: new LocalAuth({ dataPath: './whatsapp-auth' })
-  });
-
-  client.on('qr', qr => {
-    console.log('📱 Scan the QR code to login:');
-    qrcode.generate(qr, { small: true });
-  });
-
-  client.on('ready', async () => {
-    console.log('✅ WhatsApp client is ready. Sending messages...\n');
-
-    for (const product of products) {
-      const msg = `⚠️ IN STOCK ⚠️\n\nproduct name: ${product.name}\nlink: ${product.url}`;
-      for (const number of RECIPIENTS) {
-        await client.sendMessage(number, msg);
-        console.log(`📤 Sent alert to ${number}`);
-      }
-    }
-
-    console.log("✅ All alerts sent. Exiting in 5s...");
-    setTimeout(() => process.exit(0), 5000);
-  });
-
-  client.initialize();
-}
-
-// Main execution
-(async () => {
-  console.log(`\n===== Stock Check at ${new Date().toLocaleString()} =====\n`);
-  const inStock = await checkStock();
-  await sendWhatsApp(inStock);
 })();
