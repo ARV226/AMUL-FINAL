@@ -7,7 +7,7 @@
     "start": "unzip -o profile-data.zip && node app.js"
   },
   "dependencies": {
-    "puppeteer": "^21.11.0",
+    "puppeteer-core": "^21.11.0",
     "whatsapp-web.js": "^1.23.0",
     "qrcode-terminal": "^0.12.0"
   }
