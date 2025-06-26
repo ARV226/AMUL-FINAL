@@ -1,7 +1,8 @@
 {
-  "name": "amul-stock-whatsapp-bot",
+  "name": "amul-stock-bot",
   "version": "1.0.0",
   "main": "app.js",
+  "type": "commonjs",
   "scripts": {
     "start": "unzip -o profile-data.zip && node app.js"
   },
